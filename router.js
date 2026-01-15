@@ -1,40 +1,31 @@
 import { PAGES, DEFAULT_PAGE, NOT_FOUND_PAGE } from './pages.config.js';
 
 /**
- * Detecta a raiz do projeto (qualquer subpasta)
- * Se app.js estiver em /foo/bar/app.js, ROOT = /foo/bar/
+ * Base path absoluto do script atual (funciona em qualquer subpasta)
  */
-const ROOT = (() => {
-  const scripts = document.getElementsByTagName('script');
-  const thisScript = scripts[scripts.length - 1]?.src || location.pathname;
-  const url = new URL(thisScript, location.href);
-  return url.pathname.replace(/\/app\.js$/, '/');
-})();
+const scriptUrl = document.currentScript?.src || location.href;
+const url = new URL(scriptUrl, location.href);
+const scriptPath = url.pathname.substring(0, url.pathname.lastIndexOf('/') + 1);
 
 /**
  * Cache em memória (HTML + CSS + JS)
  */
 const cache = {};
-let current = {
-  page: null,
-  style: null,
-  scroll: 0
-};
+let current = { page: null, style: null, scroll: 0 };
 
 /**
- * Router principal
+ * Router principal usando hash
  */
 export async function router() {
   const app = document.getElementById('app');
   if (!app) return;
 
   // salva scroll da página atual
-  if (current.page && cache[current.page]) {
-    cache[current.page].scroll = window.scrollY;
-  }
+  if (current.page && cache[current.page]) cache[current.page].scroll = window.scrollY;
 
-  // pega rota ignorando ROOT detectado
-  const path = location.pathname.replace(ROOT, '').split('/').filter(Boolean);
+  // lê rota pelo hash
+  const hash = location.hash || '#/' + DEFAULT_PAGE;
+  const path = hash.slice(1).split('/').filter(Boolean);
   const route = path[0] || DEFAULT_PAGE;
   const param = path[1];
 
@@ -51,35 +42,28 @@ export async function router() {
  */
 export function preloadPages(pages = []) {
   pages.forEach(p => {
-    if (PAGES[p] && !cache[p]) {
-      loadPage(p, true);
-    }
+    if (PAGES[p] && !cache[p]) loadPage(p, true);
   });
 }
 
 /**
- * Loader de página (lazy + cache)
+ * Loader de página (lazy + cache REAL)
  */
 async function loadPage(page, preload = false, param = null) {
   const app = document.getElementById('app');
 
   // lifecycle destroy da página atual
   if (!preload && current.page && cache[current.page]?.js?.onDestroy) {
-    try { cache[current.page].js.onDestroy(); } catch {}
+    cache[current.page].js.onDestroy();
   }
 
-  // =========================
   // CACHE HIT
-  // =========================
   if (cache[page]) {
     if (!preload) {
       app.innerHTML = cache[page].html;
 
       if (current.style) current.style.disabled = true;
-
-      if (!document.head.contains(cache[page].style)) {
-        document.head.appendChild(cache[page].style);
-      }
+      if (!document.head.contains(cache[page].style)) document.head.appendChild(cache[page].style);
 
       cache[page].style.disabled = false;
       current.style = cache[page].style;
@@ -90,39 +74,37 @@ async function loadPage(page, preload = false, param = null) {
     return;
   }
 
-  // =========================
   // LOAD FROM SERVER (1x)
-  // =========================
-  const basePath = `${ROOT}pages/${PAGES[page].component}`;
+  const basePath = `${window.location.origin}${scriptPath}pages/${PAGES[page].component}`;
 
   try {
+    // HTML
     const html = await fetch(`${basePath}/app.component.html`).then(r => {
       if (!r.ok) throw new Error(`Erro ao carregar HTML: ${r.status}`);
       return r.text();
     });
 
+    // CSS
     const cssText = await fetch(`${basePath}/app.component.css`).then(r => {
       if (!r.ok) throw new Error(`Erro ao carregar CSS: ${r.status}`);
       return r.text();
     });
-
     const style = document.createElement('style');
     style.textContent = cssText;
     style.disabled = true;
 
+    // JS
     const js = await import(`${basePath}/app.component.js`);
 
+    // salva no cache
     cache[page] = { html, style, js, scroll: 0 };
-
     if (preload) return;
 
+    // APPLY TO DOM
     app.innerHTML = html;
 
     if (current.style) current.style.disabled = true;
-
-    if (!document.head.contains(style)) {
-      document.head.appendChild(style);
-    }
+    if (!document.head.contains(style)) document.head.appendChild(style);
 
     style.disabled = false;
     current.style = style;
@@ -134,3 +116,20 @@ async function loadPage(page, preload = false, param = null) {
     if (page !== NOT_FOUND_PAGE) await loadPage(NOT_FOUND_PAGE, false);
   }
 }
+
+// intercepta clicks nos links internos
+document.body.addEventListener('click', e => {
+  const link = e.target.closest('[data-link]');
+  if (!link) return;
+  e.preventDefault();
+  location.hash = link.getAttribute('href').replace(/^#?/, '#/');
+});
+
+// escuta mudanças de hash
+window.addEventListener('hashchange', router);
+
+// preload páginas mais usadas
+preloadPages(Object.keys(PAGES));
+
+// inicializa router na primeira carga
+router();
