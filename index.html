@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>SPA Avançada sem Framework</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; }
+    nav { padding: 10px; background:#222; }
+    nav a { color:white; margin-right:15px; text-decoration:none; }
+    #app { min-height:100vh; padding:20px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/pagina1" data-link>Pagina 1</a>
+    <a href="/pagina2/123" data-link>Pagina 223 (id)</a>
+    <a href="/pagina3" data-link>Pagina 33</a>
+    <a href="/pagina-inexistente" data-link>404</a>
+  </nav>
+
+  <main id="app"></main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
