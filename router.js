@@ -1,18 +1,15 @@
 import { PAGES, DEFAULT_PAGE, NOT_FOUND_PAGE } from './pages.config.js';
 
 /**
- * Detecta a raiz do projeto (suporte a subpastas)
- * Ex: https://meusite.com/subpasta/home -> /subpasta
+ * Detecta a raiz do projeto (qualquer subpasta)
+ * Se app.js estiver em /foo/bar/app.js, ROOT = /foo/bar/
  */
 const ROOT = (() => {
-  // pega a URL completa do próprio script
   const scripts = document.getElementsByTagName('script');
-  const thisScript = scripts[scripts.length - 1].src; // último script carregado
-  const url = new URL(thisScript);
-  // remove 'app.js' do caminho
+  const thisScript = scripts[scripts.length - 1]?.src || location.pathname;
+  const url = new URL(thisScript, location.href);
   return url.pathname.replace(/\/app\.js$/, '/');
 })();
-
 
 /**
  * Cache em memória (HTML + CSS + JS)
@@ -36,6 +33,7 @@ export async function router() {
     cache[current.page].scroll = window.scrollY;
   }
 
+  // pega rota ignorando ROOT detectado
   const path = location.pathname.replace(ROOT, '').split('/').filter(Boolean);
   const route = path[0] || DEFAULT_PAGE;
   const param = path[1];
@@ -67,7 +65,7 @@ async function loadPage(page, preload = false, param = null) {
 
   // lifecycle destroy da página atual
   if (!preload && current.page && cache[current.page]?.js?.onDestroy) {
-    cache[current.page].js.onDestroy();
+    try { cache[current.page].js.onDestroy(); } catch {}
   }
 
   // =========================
@@ -77,15 +75,12 @@ async function loadPage(page, preload = false, param = null) {
     if (!preload) {
       app.innerHTML = cache[page].html;
 
-      // desabilita style atual
       if (current.style) current.style.disabled = true;
 
-      // adiciona style no DOM se ainda não estiver
       if (!document.head.contains(cache[page].style)) {
         document.head.appendChild(cache[page].style);
       }
 
-      // habilita novo style
       cache[page].style.disabled = false;
       current.style = cache[page].style;
 
@@ -98,41 +93,33 @@ async function loadPage(page, preload = false, param = null) {
   // =========================
   // LOAD FROM SERVER (1x)
   // =========================
-  const basePath = `${ROOT}/pages/${PAGES[page].component}`;
+  const basePath = `${ROOT}pages/${PAGES[page].component}`;
 
   try {
-    // HTML
     const html = await fetch(`${basePath}/app.component.html`).then(r => {
       if (!r.ok) throw new Error(`Erro ao carregar HTML: ${r.status}`);
       return r.text();
     });
 
-    // CSS
     const cssText = await fetch(`${basePath}/app.component.css`).then(r => {
       if (!r.ok) throw new Error(`Erro ao carregar CSS: ${r.status}`);
       return r.text();
     });
+
     const style = document.createElement('style');
     style.textContent = cssText;
-    style.disabled = true; // inicialmente desabilitado
+    style.disabled = true;
 
-    // JS
     const js = await import(`${basePath}/app.component.js`);
 
-    // salva no cache
     cache[page] = { html, style, js, scroll: 0 };
 
-    // preload NÃO aplica no DOM
     if (preload) return;
 
-    // =========================
-    // APPLY TO DOM
-    // =========================
     app.innerHTML = html;
 
     if (current.style) current.style.disabled = true;
 
-    // adiciona style ao DOM
     if (!document.head.contains(style)) {
       document.head.appendChild(style);
     }
@@ -144,7 +131,6 @@ async function loadPage(page, preload = false, param = null) {
     current.page = page;
   } catch (err) {
     console.error('Erro ao carregar página:', err);
-    // fallback para NOT_FOUND_PAGE
     if (page !== NOT_FOUND_PAGE) await loadPage(NOT_FOUND_PAGE, false);
   }
 }
