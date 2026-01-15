@@ -5,9 +5,14 @@ import { PAGES, DEFAULT_PAGE, NOT_FOUND_PAGE } from './pages.config.js';
  * Ex: https://meusite.com/subpasta/home -> /subpasta
  */
 const ROOT = (() => {
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  return pathParts.length > 1 ? `/${pathParts[0]}` : '';
+  // pega a URL completa do próprio script
+  const scripts = document.getElementsByTagName('script');
+  const thisScript = scripts[scripts.length - 1].src; // último script carregado
+  const url = new URL(thisScript);
+  // remove 'app.js' do caminho
+  return url.pathname.replace(/\/app\.js$/, '/');
 })();
+
 
 /**
  * Cache em memória (HTML + CSS + JS)
