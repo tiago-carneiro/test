@@ -118,11 +118,15 @@ async function loadPage(page, preload = false, param = null) {
 }
 
 // intercepta clicks nos links internos
+// intercepta clicks nos links internos
 document.body.addEventListener('click', e => {
   const link = e.target.closest('[data-link]');
   if (!link) return;
   e.preventDefault();
-  location.hash = link.getAttribute('href').replace(/^#?/, '#/');
+
+  // remove qualquer # do começo e garante apenas uma barra
+  const href = link.getAttribute('href').replace(/^#+/, '');
+  location.hash = '#/' + href.replace(/^\/+/, ''); // remove barras extras
 });
 
 // escuta mudanças de hash
