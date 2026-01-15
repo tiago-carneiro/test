@@ -1,1 +1,7 @@
-export function onInit(t,e){const n=document.getElementById("status"),o=new Date().toLocaleTimeString();n.textContent="404 - P\xE1gina n\xE3o encontrada carregada \xE0s "+o+(t?" | par\xE2metro: "+t:"")+(e?" (cache)":"")}
+export function onInit(param, fromCache) {
+  const el = document.getElementById('status');
+  const time = new Date().toLocaleTimeString();
+  el.textContent = '404 - Página não encontrada carregada às ' + time +
+    (param ? ' | parâmetro: ' + param : '') +
+    (fromCache ? ' (cache)' : '');
+}

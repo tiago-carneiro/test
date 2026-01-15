@@ -1,1 +1,160 @@
-import{PAGES as h,DEFAULT_PAGE as d,NOT_FOUND_PAGE as p}from"./pages.config.js";const w=document.currentScript?.src||location.href,m=new URL(w,location.href),E=m.pathname.substring(0,m.pathname.lastIndexOf("/")+1);location.hash.startsWith("#/")?location.hash=location.hash.replace(/^#\/+/,"#/"):location.hash="#/"+d;const e={};let n={page:null,style:null,scroll:0};export async function router(){if(!document.getElementById("app"))return;n.page&&e[n.page]&&(e[n.page].scroll=window.scrollY);const a=(location.hash||"#/"+d).slice(1).split("/").filter(Boolean),l=a[0]||d,i=a[1],s=h[l]?l:p;await f(s,!1,i),window.scrollTo(0,e[s]?.scroll||0)}export function preloadPages(t=[]){t.forEach(o=>{h[o]&&!e[o]&&f(o,!0)})}async function f(t,o=!1,a=null){const l=document.getElementById("app");if(!o&&n.page&&e[n.page]?.js?.onDestroy&&e[n.page].js.onDestroy(),e[t]){o||(l.innerHTML=e[t].html,n.style&&(n.style.disabled=!0),document.head.contains(e[t].style)||document.head.appendChild(e[t].style),e[t].style.disabled=!1,n.style=e[t].style,e[t].js.onInit?.(a,!0),n.page=t);return}const i=`${window.location.origin}${E}pages/${h[t].component}`;try{const s=await fetch(`${i}/app.component.html`).then(c=>{if(!c.ok)throw new Error(`Erro ao carregar HTML: ${c.status}`);return c.text()}),y=await fetch(`${i}/app.component.css`).then(c=>{if(!c.ok)throw new Error(`Erro ao carregar CSS: ${c.status}`);return c.text()}),r=document.createElement("style");r.textContent=y,r.disabled=!0;const u=await import(`${i}/app.component.js`);if(e[t]={html:s,style:r,js:u,scroll:0},o)return;l.innerHTML=s,n.style&&(n.style.disabled=!0),document.head.contains(r)||document.head.appendChild(r),r.disabled=!1,n.style=r,u.onInit?.(a,!1),n.page=t}catch(s){console.error("Erro ao carregar p\xE1gina:",s),t!==p&&await f(p,!1)}}document.body.addEventListener("click",t=>{const o=t.target.closest("[data-link]");if(!o)return;t.preventDefault();const a=o.getAttribute("href").replace(/^#+/,"");location.hash="#/"+a.replace(/^\/+/,"")}),window.addEventListener("hashchange",router),preloadPages(Object.keys(h)),location.hash?location.hash=location.hash.replace(/^#\/+/,"#/"):location.hash="#/"+d,window.addEventListener("DOMContentLoaded",()=>{router()});
+import { PAGES, DEFAULT_PAGE, NOT_FOUND_PAGE } from './pages.config.js';
+
+/**
+ * Base path absoluto do script atual (funciona em qualquer subpasta)
+ */
+const scriptUrl = document.currentScript?.src || location.href;
+
+const url = new URL(scriptUrl, location.href);
+
+const scriptPath = url.pathname.substring(0, url.pathname.lastIndexOf('/') + 1);
+
+// normaliza hash na primeira carga
+if (!location.hash.startsWith('#/')) {
+  location.hash = '#/' + DEFAULT_PAGE;
+} else {
+  // remove barras duplicadas
+  location.hash = location.hash.replace(/^#\/+/, '#/');
+}
+
+
+/**
+ * Cache em memória (HTML + CSS + JS)
+ */
+const cache = {};
+let current = { page: null, style: null, scroll: 0 };
+
+/**
+ * Router principal usando hash
+ */
+export async function router() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // salva scroll da página atual
+  if (current.page && cache[current.page]) cache[current.page].scroll = window.scrollY;
+
+  // lê rota pelo hash
+  const hash = location.hash || '#/' + DEFAULT_PAGE;
+  const path = hash.slice(1).split('/').filter(Boolean);
+  const route = path[0] || DEFAULT_PAGE;
+  const param = path[1];
+
+  const page = PAGES[route] ? route : NOT_FOUND_PAGE;
+
+  await loadPage(page, false, param);
+
+  // restaura scroll
+  window.scrollTo(0, cache[page]?.scroll || 0);
+}
+
+/**
+ * Preload opcional
+ */
+export function preloadPages(pages = []) {
+  pages.forEach(p => {
+    if (PAGES[p] && !cache[p]) loadPage(p, true);
+  });
+}
+
+/**
+ * Loader de página (lazy + cache REAL)
+ */
+async function loadPage(page, preload = false, param = null) {
+  const app = document.getElementById('app');
+
+  // lifecycle destroy da página atual
+  if (!preload && current.page && cache[current.page]?.js?.onDestroy) {
+    cache[current.page].js.onDestroy();
+  }
+
+  // CACHE HIT
+  if (cache[page]) {
+    if (!preload) {
+      app.innerHTML = cache[page].html;
+
+      if (current.style) current.style.disabled = true;
+      if (!document.head.contains(cache[page].style)) document.head.appendChild(cache[page].style);
+
+      cache[page].style.disabled = false;
+      current.style = cache[page].style;
+
+      cache[page].js.onInit?.(param, true);
+      current.page = page;
+    }
+    return;
+  }
+
+  // LOAD FROM SERVER (1x)
+  const basePath = `${window.location.origin}${scriptPath}pages/${PAGES[page].component}`;
+
+  try {
+    // HTML
+    const html = await fetch(`${basePath}/app.component.html`).then(r => {
+      if (!r.ok) throw new Error(`Erro ao carregar HTML: ${r.status}`);
+      return r.text();
+    });
+
+    // CSS
+    const cssText = await fetch(`${basePath}/app.component.css`).then(r => {
+      if (!r.ok) throw new Error(`Erro ao carregar CSS: ${r.status}`);
+      return r.text();
+    });
+    const style = document.createElement('style');
+    style.textContent = cssText;
+    style.disabled = true;
+
+    // JS
+    const js = await import(`${basePath}/app.component.js`);
+
+    // salva no cache
+    cache[page] = { html, style, js, scroll: 0 };
+    if (preload) return;
+
+    // APPLY TO DOM
+    app.innerHTML = html;
+
+    if (current.style) current.style.disabled = true;
+    if (!document.head.contains(style)) document.head.appendChild(style);
+
+    style.disabled = false;
+    current.style = style;
+
+    js.onInit?.(param, false);
+    current.page = page;
+  } catch (err) {
+    console.error('Erro ao carregar página:', err);
+    if (page !== NOT_FOUND_PAGE) await loadPage(NOT_FOUND_PAGE, false);
+  }
+}
+
+// intercepta clicks nos links internos
+document.body.addEventListener('click', e => {
+  const link = e.target.closest('[data-link]');
+  if (!link) return;
+  e.preventDefault();
+
+  // remove qualquer # do começo e garante apenas uma barra
+  const href = link.getAttribute('href').replace(/^#+/, '');
+  location.hash = '#/' + href.replace(/^\/+/, ''); // remove barras extras
+});
+
+
+// escuta mudanças de hash
+window.addEventListener('hashchange', router);
+
+// preload páginas mais usadas
+preloadPages(Object.keys(PAGES));
+
+// normaliza hash na primeira carga
+if (!location.hash) {
+  // se não houver hash, define DEFAULT_PAGE
+  location.hash = '#/' + DEFAULT_PAGE;
+} else {
+  location.hash = location.hash.replace(/^#\/+/, '#/');
+}
+
+// inicializa router após DOM estar pronto
+window.addEventListener('DOMContentLoaded', () => {
+  router();
+});
