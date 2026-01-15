@@ -1,1 +1,1 @@
-function a(A,b){let c=document.getElementById('status'),d=new Date().toLocaleTimeString();c.textContent='Pagina 22 carregada às '+d+(A?` | parâmetro: ${A}`:'')+(b?' (cache)':'')}export{a as onInit};
+export function onInit(t,e){const n=document.getElementById("status"),o=new Date().toLocaleTimeString();n.textContent="Pagina 22 carregada \xE0s "+o+(t?" | par\xE2metro: "+t:"")+(e?" (cache)":"")}
