@@ -136,4 +136,6 @@ window.addEventListener('hashchange', router);
 preloadPages(Object.keys(PAGES));
 
 // inicializa router na primeira carga
-router();
+if (!location.hash) {
+  router();
+}
