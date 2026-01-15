@@ -7,6 +7,15 @@ const scriptUrl = document.currentScript?.src || location.href;
 const url = new URL(scriptUrl, location.href);
 const scriptPath = url.pathname.substring(0, url.pathname.lastIndexOf('/') + 1);
 
+// normaliza hash na primeira carga
+if (!location.hash.startsWith('#/')) {
+  location.hash = '#/' + DEFAULT_PAGE;
+} else {
+  // remove barras duplicadas
+  location.hash = location.hash.replace(/^#\/+/, '#/');
+}
+
+
 /**
  * Cache em memória (HTML + CSS + JS)
  */
@@ -118,7 +127,6 @@ async function loadPage(page, preload = false, param = null) {
 }
 
 // intercepta clicks nos links internos
-// intercepta clicks nos links internos
 document.body.addEventListener('click', e => {
   const link = e.target.closest('[data-link]');
   if (!link) return;
@@ -129,13 +137,22 @@ document.body.addEventListener('click', e => {
   location.hash = '#/' + href.replace(/^\/+/, ''); // remove barras extras
 });
 
+
 // escuta mudanças de hash
 window.addEventListener('hashchange', router);
 
 // preload páginas mais usadas
 preloadPages(Object.keys(PAGES));
 
-// inicializa router na primeira carga
+// normaliza hash na primeira carga
 if (!location.hash) {
-  router();
+  // se não houver hash, define DEFAULT_PAGE
+  location.hash = '#/' + DEFAULT_PAGE;
+} else {
+  location.hash = location.hash.replace(/^#\/+/, '#/');
 }
+
+// inicializa router após DOM estar pronto
+window.addEventListener('DOMContentLoaded', () => {
+  router();
+});
