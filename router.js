@@ -1,11 +1,12 @@
 import { PAGES, DEFAULT_PAGE, NOT_FOUND_PAGE } from './pages.config.js';
 
 /**
- * Detecta a raiz do projeto automaticamente (Rider / subpasta)
+ * Detecta a raiz do projeto (suporte a subpastas)
+ * Ex: https://meusite.com/subpasta/home -> /subpasta
  */
 const ROOT = (() => {
-  const parts = location.pathname.split('/').filter(Boolean);
-  return parts.length > 1 ? `/${parts[0]}` : '';
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  return pathParts.length > 1 ? `/${pathParts[0]}` : '';
 })();
 
 /**
@@ -54,7 +55,7 @@ export function preloadPages(pages = []) {
 }
 
 /**
- * Loader de página (lazy + cache REAL)
+ * Loader de página (lazy + cache)
  */
 async function loadPage(page, preload = false, param = null) {
   const app = document.getElementById('app');
@@ -94,47 +95,51 @@ async function loadPage(page, preload = false, param = null) {
   // =========================
   const basePath = `${ROOT}/pages/${PAGES[page].component}`;
 
-  // HTML
-  const html = await fetch(`${basePath}/app.component.html`).then(r => r.text());
+  try {
+    // HTML
+    const html = await fetch(`${basePath}/app.component.html`).then(r => {
+      if (!r.ok) throw new Error(`Erro ao carregar HTML: ${r.status}`);
+      return r.text();
+    });
 
-  // CSS
-  const cssText = await fetch(`${basePath}/app.component.css`).then(r => r.text());
-  const style = document.createElement('style');
-  style.textContent = cssText;
-  style.disabled = true; // inicialmente desabilitado
+    // CSS
+    const cssText = await fetch(`${basePath}/app.component.css`).then(r => {
+      if (!r.ok) throw new Error(`Erro ao carregar CSS: ${r.status}`);
+      return r.text();
+    });
+    const style = document.createElement('style');
+    style.textContent = cssText;
+    style.disabled = true; // inicialmente desabilitado
 
-  // JS
-  const js = await import(`${basePath}/app.component.js`);
+    // JS
+    const js = await import(`${basePath}/app.component.js`);
 
-  // salva no cache
-  cache[page] = {
-    html,
-    style,
-    js,
-    scroll: 0
-  };
+    // salva no cache
+    cache[page] = { html, style, js, scroll: 0 };
 
-  // preload NÃO aplica no DOM
-  if (preload) return;
+    // preload NÃO aplica no DOM
+    if (preload) return;
 
-  // =========================
-  // APPLY TO DOM
-  // =========================
-  app.innerHTML = html;
+    // =========================
+    // APPLY TO DOM
+    // =========================
+    app.innerHTML = html;
 
-  // desabilita style atual
-  if (current.style) current.style.disabled = true;
+    if (current.style) current.style.disabled = true;
 
-  // adiciona style ao DOM
-  if (!document.head.contains(style)) {
-    document.head.appendChild(style);
+    // adiciona style ao DOM
+    if (!document.head.contains(style)) {
+      document.head.appendChild(style);
+    }
+
+    style.disabled = false;
+    current.style = style;
+
+    js.onInit?.(param, false);
+    current.page = page;
+  } catch (err) {
+    console.error('Erro ao carregar página:', err);
+    // fallback para NOT_FOUND_PAGE
+    if (page !== NOT_FOUND_PAGE) await loadPage(NOT_FOUND_PAGE, false);
   }
-
-  // habilita style da página
-  style.disabled = false;
-  current.style = style;
-
-  // lifecycle init
-  js.onInit?.(param, false);
-  current.page = page;
 }
