@@ -1,1 +1,52 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>SPA Avançada sem Framework</title><style> body { margin:0; font-family: Arial, sans-serif; } nav { padding: 10px; background:#222; } nav a { color:white; margin-right:15px; text-decoration:none; } #app { min-height:100vh; padding:20px; } </style></head><body><nav><a href="#/pagina1" data-link>Pagina 1</a><a href="#/pagina2/123" data-link>Pagina 2 (id)</a><a href="#/pagina3" data-link>Pagina 3</a><a href="#/pagina-inexistente" data-link>404</a></nav><main id="app"></main><script type="module" src="./app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlazorApp1</title>
+    <base href="/" />
+    <link href="_framework/dotnet.fxxq3xu5xm.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-Q1WTNbb9ojhgd1J3d7nkl6USU9Q2oofyipHCMVAh19I=" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="BlazorApp1.styles.css" rel="stylesheet" />
+    <script type="importmap">{
+  "imports": {
+    "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.zxhwjtv6sc.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.fxxq3xu5xm.js",
+    "./_framework/dotnet.native.js": "./_framework/dotnet.native.iablr69qv2.js",
+    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.zbexyp8zrs.js"
+  },
+  "scopes": {},
+  "integrity": {
+    "./_framework/blazor.webassembly.js": "sha256-1xlHuu1iNOJiMMz2BCq95uekwHf6pdpTcgVNKVBboPs=",
+    "./_framework/blazor.webassembly.zxhwjtv6sc.js": "sha256-1xlHuu1iNOJiMMz2BCq95uekwHf6pdpTcgVNKVBboPs=",
+    "./_framework/dotnet.fxxq3xu5xm.js": "sha256-Q1WTNbb9ojhgd1J3d7nkl6USU9Q2oofyipHCMVAh19I=",
+    "./_framework/dotnet.js": "sha256-Q1WTNbb9ojhgd1J3d7nkl6USU9Q2oofyipHCMVAh19I=",
+    "./_framework/dotnet.native.iablr69qv2.js": "sha256-ag9UVRiu7XByXa9qT9vStvvg6u5qfRrYKptJFJIxgcg=",
+    "./_framework/dotnet.native.js": "sha256-ag9UVRiu7XByXa9qT9vStvvg6u5qfRrYKptJFJIxgcg=",
+    "./_framework/dotnet.runtime.js": "sha256-MZMguyke9CroSQl+L/SHIGFkPTD+LtYGXkXjAvwWx40=",
+    "./_framework/dotnet.runtime.zbexyp8zrs.js": "sha256-MZMguyke9CroSQl+L/SHIGFkPTD+LtYGXkXjAvwWx40="
+  }
+}</script>
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.zxhwjtv6sc.js"></script>
+</body>
+
+</html>

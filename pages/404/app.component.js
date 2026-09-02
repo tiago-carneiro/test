@@ -1,1 +1,0 @@
-export function onInit(t,e){const n=document.getElementById("status"),o=new Date().toLocaleTimeString();n.textContent="404 - P\xE1gina n\xE3o encontrada carregada \xE0s "+o+(t?" | par\xE2metro: "+t:"")+(e?" (cache)":"")}
